@@ -1,0 +1,13 @@
+{
+  "name": "skl-consultancy-website",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-routes.mjs",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.92.0"
+  }
+}
