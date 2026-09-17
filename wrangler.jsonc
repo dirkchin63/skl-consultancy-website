@@ -4,10 +4,6 @@
   "compatibility_date": "2026-09-17",
   "workers_dev": true,
   "preview_urls": true,
-  "routes": [
-    { "pattern": "skl-consultancy.com", "custom_domain": true },
-    { "pattern": "www.skl-consultancy.com", "custom_domain": true }
-  ],
   "assets": {
     "directory": "./dist",
     "html_handling": "auto-trailing-slash",

@@ -18,12 +18,26 @@ This repository is prepared for the same deployment pattern as `wmc-hk.com`:
    - Deploy command: `npm run deploy`
    - Root directory: `/`
 5. The Worker name must be `skl-consultancy-website`, matching `wrangler.jsonc`.
+6. Check the generated `workers.dev` preview before attaching the production domains.
 
 ## Hostinger
 
 After Cloudflare has imported and reviewed the existing DNS records, replace the domain's
 Hostinger nameservers with the two nameservers assigned by Cloudflare. Do not remove or
 alter Hostinger email subscriptions or the corresponding MX, SPF, DKIM and DMARC records.
+
+Keep the existing Hostinger website DNS records in Cloudflare during this step so the old
+website continues to work while the Worker preview is tested.
+
+## Production domain cutover
+
+Only after the Worker preview passes testing, add these custom domains to the Worker:
+
+- `skl-consultancy.com`
+- `www.skl-consultancy.com`
+
+Cloudflare will create the required proxied DNS records and SSL certificates. Remove or
+replace only the old website A/CNAME records; leave all email records unchanged.
 
 ## Cutover checks
 
