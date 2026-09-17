@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://skl-consultancy.com/sitemap.xml

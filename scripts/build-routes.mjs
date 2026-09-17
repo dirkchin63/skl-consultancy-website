@@ -1,0 +1,33 @@
+import{cp,mkdir,readFile,writeFile}from'node:fs/promises';
+import{resolve}from'node:path';
+import vm from'node:vm';
+const root=resolve(import.meta.dirname,'..');
+const dist=resolve(root,'dist');
+const routes=['aboutus','services','people','latestnews','blog-list','contactus','language','opportunities','privacy','cn-founding','cn-scientificinvestigation','cn-lawconsultancy','cn-corporatefinance','cn-coporatedispute','cn-businesspromote','cn-dataprotection','cn-propertvaluation','cn-corporatereorganization','cn-mergeandacquisition','cn-dentreorganization','cn-trademarkregistration','cn-stephen-wong-kai-yi','cn-patrick-wong','cn-robert-chui','cn-alexander-tai','-jp','cn-tam-yiu-kwok','alan-au','cn-chow-hin'];
+const publicRoutes=[...routes,'en','zh-hans',...routes.map(route=>`en/${route}`),...routes.map(route=>`zh-hans/${route}`)];
+const shell=await readFile(resolve(dist,'index.html'),'utf8');
+const sandbox={window:{}};vm.runInNewContext(await readFile(resolve(dist,'data.js'),'utf8'),sandbox);vm.runInNewContext(await readFile(resolve(dist,'i18n.js'),'utf8'),sandbox);
+const d=sandbox.window.SKL_DATA;
+for(const route of publicRoutes){
+ const target=resolve(dist,route);await mkdir(target,{recursive:true});
+ const baseRoute=route.replace(/^(en|zh-hans)\/?/,'');
+ const locale=route==='en'||route.startsWith('en/')?'en':route==='zh-hans'||route.startsWith('zh-hans/')?'zhHans':'zhHant';
+ const ld=sandbox.window.SKL_I18N[locale]||d;
+ const sectionTitles={zhHant:{aboutus:'關於我們',services:'服務概覽',people:'專業團隊',latestnews:'最新資訊','blog-list':'最新資訊',contactus:'聯絡我們',language:'請選擇語言',opportunities:'工作機會',privacy:'私隱聲明'},zhHans:{aboutus:'关于我们',services:'服务概览',people:'专业团队',latestnews:'最新资讯','blog-list':'最新资讯',contactus:'联系我们',language:'选择语言',opportunities:'工作机会',privacy:'隐私声明'},en:{aboutus:'About Us',services:'Services',people:'Our People',latestnews:'Latest News','blog-list':'Latest News',contactus:'Contact Us',language:'Choose a Language',opportunities:'Career Opportunities',privacy:'Privacy Statement'}}[locale];
+ const item=ld.services.find(entry=>entry.route===baseRoute)||ld.people.find(entry=>entry.route===baseRoute);
+ const pageTitle=baseRoute==='cn-founding'?ld.founding.title:item?.title||item?.name||sectionTitles[baseRoute]||ld.company.name;
+ const title=pageTitle===ld.company.english?pageTitle:`${pageTitle} | ${ld.company.english}`;
+ const canonicalRoute=baseRoute==='blog-list'?'latestnews':baseRoute;
+ const suffix=canonicalRoute?`${canonicalRoute}/`:'';
+ const canonicalPath=locale==='en'?`en/${suffix}`:locale==='zhHans'?`zh-hans/${suffix}`:suffix;
+ const alternates=`<!-- language-alternates:start -->\n  <link rel="alternate" hreflang="zh-Hant" href="https://skl-consultancy.com/${suffix}">\n  <link rel="alternate" hreflang="zh-Hans" href="https://skl-consultancy.com/zh-hans/${suffix}">\n  <link rel="alternate" hreflang="en" href="https://skl-consultancy.com/en/${suffix}">\n  <link rel="alternate" hreflang="x-default" href="https://skl-consultancy.com/${suffix}">\n  <!-- language-alternates:end -->`;
+ const lang=locale==='en'?'en':locale==='zhHans'?'zh-Hans':'zh-Hant';
+ const structuredData={"@context":"https://schema.org","@type":"ProfessionalService",name:ld.company.name,alternateName:ld.company.english,url:'https://skl-consultancy.com',telephone:'+85295886463',email:ld.company.email,address:{"@type":"PostalAddress",streetAddress:ld.company.address,addressLocality:locale==='en'?'Tsim Sha Tsui':locale==='zhHans'?'尖沙咀':'尖沙咀',addressRegion:locale==='en'?'Kowloon':locale==='zhHans'?'九龙':'九龍',addressCountry:'HK'}};
+ const html=shell.replace('<html lang="zh-Hant">',`<html lang="${lang}">`).replace('<title>國林顧問有限公司 | SKL Consultancy Limited</title>',`<title>${title}</title>`).replace('<link rel="canonical" href="https://skl-consultancy.com/">',`<link rel="canonical" href="https://skl-consultancy.com/${canonicalPath}">`).replace(/<!-- language-alternates:start -->[\s\S]*?<!-- language-alternates:end -->/,alternates).replace(/<meta name="description" content="[^"]*">/,`<meta name="description" content="${ld.company.tagline}">`).replace('<meta property="og:title" content="國林顧問有限公司 | SKL Consultancy Limited">',`<meta property="og:title" content="${title}">`).replace(/<meta property="og:description" content="[^"]*">/,`<meta property="og:description" content="${ld.company.tagline}">`).replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/,`<script type="application/ld+json">${JSON.stringify(structuredData)}</script>`);
+ await writeFile(resolve(target,'index.html'),html);
+}
+await cp(resolve(dist,'index.html'),resolve(dist,'404.html'));
+await writeFile(resolve(dist,'robots.txt'),'User-agent: *\nAllow: /\nSitemap: https://skl-consultancy.com/sitemap.xml\n');
+const urls=['',...publicRoutes.filter(route=>!/(^|\/)blog-list$/.test(route))].map(route=>`<url><loc>https://skl-consultancy.com/${route}${route?'/':''}</loc></url>`).join('');
+await writeFile(resolve(dist,'sitemap.xml'),`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);
+console.log(`Built ${publicRoutes.length+1} routes.`);
